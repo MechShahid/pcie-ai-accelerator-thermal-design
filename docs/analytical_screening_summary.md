@@ -482,29 +482,33 @@ The CFD pressure drop agrees closely with the analytical estimate. The CFD chip 
 
 
 
-\## Key Analytical Figures
+## Key Analytical Figures
 
+The following plots support the analytical screening.
 
+### Compact Baseline Thermal Resistance
 
-The following plots support the analytical screening:
+![Baseline heatsink thermal resistance versus velocity](../figures/baseline_rhs_vs_velocity.png)
 
+### Compact Baseline Chip Temperature
 
+![Baseline chip temperature versus velocity](../figures/baseline_tchip_vs_velocity.png)
 
-```text
+### Robust Candidates: Airflow versus Chip Temperature
 
-figures/baseline\_rhs\_vs\_velocity.png
+![Robust candidate airflow versus chip temperature](../figures/robust_cfm_vs_tchip.png)
 
-figures/baseline\_tchip\_vs\_velocity.png
+### Robust Candidates: Thermal Margin versus Airflow
 
-figures/robust\_cfm\_vs\_tchip.png
+![Robust candidate margin versus airflow](../figures/robust_margin_vs_cfm.png)
 
-figures/robust\_margin\_vs\_cfm.png
+### Top Robust Candidates
 
-figures/top\_robust\_candidates\_tchip.png
+![Top robust candidates chip temperature](../figures/top_robust_candidates_tchip.png)
 
-figures/recommended\_candidate\_location.png
+### Recommended Candidate Location
 
-```
+![Recommended candidate location](../figures/recommended_candidate_location.png)
 
 
 
