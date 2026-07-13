@@ -1,14 +1,12 @@
-
-So ChatGPT display stopped the outer block early.
-
-Use the corrected version below. I wrapped the whole file in **four backticks**, so you can copy everything safely.
-
-````markdown
 # CFD 0 Results: First-Pass Conjugate Heat-Transfer Simulation
 
 ## Purpose
 
 This CFD case was created to check the selected forced-air heatsink concept from the analytical screening model.
+
+The CFD model represents a simplified 250 W PCIe AI accelerator cooling case with a chip, TIM layer, aluminum heatsink base, fin array, and surrounding air domain.
+
+This is a first-pass conjugate heat-transfer result, not a final mesh-independent industrial validation.
 
 ## CFD Setup Summary
 
@@ -112,6 +110,7 @@ The velocity contour shows guided airflow through the air domain and around the 
 ![Mid-plane pressure contour](../cfd/cfd_0_chip_tim_heatsink/screenshots/pressure_midplane_stable_700iter.png)
 
 The pressure contour supports the calculated pressure drop of approximately 28.8 Pa between inlet and outlet.
+
 ## Convergence Assessment
 
 Although the continuity residual did not fully reach the default convergence target, the monitored engineering quantities were stable between 200 and 700 iterations.
