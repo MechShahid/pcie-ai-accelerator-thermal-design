@@ -170,6 +170,7 @@ Detailed CFD design-iteration documentation:
 - [CFD-2 results](docs/cfd_2_results.md)
 - [CFD-3 results](docs/cfd_3_results.md)
 - [CFD design iteration summary](docs/cfd_design_iteration_summary.md)
+- [Final project summary](docs/final_project_summary.md)
 
 ## CFD Design Iteration Interpretation
 
