@@ -117,7 +117,7 @@ However, the maximum chip temperature remained approximately 2.8°C above the 85
 
 ![CFD-2 static pressure center-plane contour](../cfd/cfd_2_80x100x35_ducted_domain/screenshots/cfd_2_static_pressure_center_x_plane.png)
 
-![CFD-2 Z-velocity near fin entrance](../cfd/cfd_2_80x100x35_ducted_domain/screenshots/cfd_2_z_velocity_before_fin_plane.png)
+![CFD-2 Z-velocity near fin entrance](../cfd/cfd_2_80x100x35_ducted_domain/screenshots/cfd_2_z_velocity_fin_entrance_plane.png)
 
 ## Conclusion
 
