@@ -190,7 +190,17 @@ A practical mechanical design direction would include one or more of the followi
 
 The duct used for thermal improvement could also contribute mechanically if it is designed as a chassis-supported airflow guide rather than only as a fluid-domain boundary.
 
+## Earlier Mechanical-Thermal Screening
 
+Before the final CFD-3 design was selected, an analytical mechanical-thermal screening was performed to compare candidate heatsink geometries by thermal margin and estimated mass.
+
+![Mechanical feasibility margin versus mass](../figures/mechanical_feasibility_margin_vs_mass.png)
+
+The screening showed that candidates with stronger thermal margin generally required larger heatsink mass. This created a tradeoff between thermal feasibility and mechanical support risk.
+
+![Estimated heatsink mass comparison](../figures/mechanical_feasibility_mass_comparison.png)
+
+The mass comparison showed that several thermally attractive heatsink concepts were above the selected support-risk reference level. This supported the later conclusion that the final thermally passing design should include additional mechanical support such as a backplate, bracket, standoffs, or chassis-supported duct.
 
 \## Engineering Conclusion
 
