@@ -4,7 +4,7 @@
 
 This project develops a simplified mechanical and thermal design workflow for a high-power PCIe-style AI accelerator card. The goal is to demonstrate practical board-level electronics cooling judgement for accelerator-card applications.
 
-The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, and a simulation-to-test validation plan.
+The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, airflow-bypass diagnosis, and concept-level mechanical support screening.
 
 This is an original engineering demonstrator. It is not a reverse-engineered commercial accelerator card and does not claim production qualification.
 
@@ -19,6 +19,7 @@ Modern AI accelerator cards can dissipate high chip-level power and require care
 - Can the chip temperature target be met with forced-air cooling?
 - How sensitive is the design to TIM thickness, TIM conductivity, and airflow rate?
 - How does airflow bypass affect a lower-height heatsink?
+- Does the final heatsink concept create mechanical support risk?
 - How would the simulation be validated against physical thermal testing?
 
 The purpose of this project is to show the workflow behind these decisions, not only the final simulation result.
@@ -66,15 +67,17 @@ The 250 W chip load represents a high-TDP accelerator-class cooling problem.
 
 The required chip-to-air thermal resistance is:
 
-    R_required = (T_chip,max - T_air,inlet) / Q_chip
+```text
+R_required = (T_chip,max - T_air,inlet) / Q_chip
 
-    R_required = (85 - 25) / 250
+R_required = (85 - 25) / 250
 
-    R_required = 0.24 K/W
+R_required = 0.24 K/W
+```
 
 ## Design Evolution
 
-The initial baseline heatsink geometry was defined as an 80 mm × 80 mm × 25 mm aluminum finned heatsink. This compact geometry was used as the starting point for first-order thermal resistance and airflow calculations.
+The initial baseline heatsink geometry was defined as an 80 mm × 80 mm × 25 mm aluminium finned heatsink. This compact geometry was used as the starting point for first-order thermal resistance and airflow calculations.
 
 Analytical screening showed that the compact baseline heatsink was not sufficient for the 250 W chip load under realistic forced-air assumptions. The design was therefore expanded to a larger forced-air heatsink candidate for the first CFD stage.
 
@@ -98,7 +101,7 @@ After the larger reference case was completed, a lower-height 35 mm heatsink con
 
 A first-pass conjugate heat-transfer CFD model was completed for the selected larger forced-air heatsink candidate.
 
-The CFD model used a 250 W chip heat load, a 0.2 mm TIM layer, an aluminum heatsink base, 26 fins, and 5 m/s guided inlet airflow.
+The CFD model used a 250 W chip heat load, a 0.2 mm TIM layer, an aluminium heatsink base, 26 fins, and 5 m/s guided inlet airflow.
 
 | Quantity | CFD-0 Result |
 |---|---:|
@@ -110,10 +113,6 @@ The CFD model used a 250 W chip heat load, a 0.2 mm TIM layer, an aluminum heats
 | Energy balance error | approximately 0.9% |
 
 The CFD-0 result supports the analytical screening conclusion that the larger forced-air heatsink concept can keep the 250 W chip below the 85 °C target under the assumed 5 m/s guided airflow condition.
-
-Detailed analytical screening is documented here:
-
-[Analytical Screening Summary](docs/analytical_screening_summary.md)
 
 Detailed CFD-0 results are documented here:
 
@@ -129,10 +128,6 @@ Detailed CFD-0 results are documented here:
 The CFD chip temperature is lower than the analytical estimate by approximately 6.4 °C. This is acceptable for a first-pass comparison because the analytical model was intentionally simplified and conservative.
 
 The pressure-drop agreement is strong, with the CFD result close to the analytical estimate.
-
-The analytical screening workflow is summarized here:
-
-[Analytical Screening Summary](docs/analytical_screening_summary.md)
 
 ## CFD-0 Limitations
 
@@ -184,6 +179,62 @@ Third, extending the ducted heatsink from 100 mm to 120 mm recovered the remaini
 
 This sequence demonstrates a physics-based design workflow: identify the failure, diagnose the airflow limitation, improve the ducting, and then modify the heatsink geometry to recover thermal margin.
 
+## Mechanical Support and Structural Feasibility Screening
+
+After the final CFD-3 thermal candidate was selected, a concept-level mechanical support screening was added.
+
+The purpose was to check whether the final 80 mm × 120 mm × 35 mm aluminium heatsink is mechanically reasonable on a PCIe-style card, or whether additional support would likely be required.
+
+This check estimates:
+
+- heatsink volume
+- heatsink mass
+- weight force
+- approximate bending moment
+- support-risk level
+- recommended support concept
+
+The calculation is concept-level only. It is not a detailed PCB structural FEA, PCIe compliance check, or shock/vibration validation.
+
+| Case | Geometry | Estimated mass | Weight force | Approx. bending moment | Support risk |
+|---|---|---:|---:|---:|---|
+| CFD-0 | 80 × 100 × 50 mm | 459.00 g | 4.50 N | 0.158 N·m | High |
+| CFD-1 | 80 × 100 × 35 mm | 353.70 g | 3.47 N | 0.121 N·m | High |
+| CFD-2 | 80 × 100 × 35 mm | 353.70 g | 3.47 N | 0.121 N·m | High |
+| CFD-3 | 80 × 120 × 35 mm | 424.44 g | 4.16 N | 0.146 N·m | High |
+
+The final CFD-3 heatsink has an estimated mass of approximately 424 g and an approximate bending moment of 0.146 N·m using a simplified 35 mm lever-arm assumption. This places the design in the high support-risk category.
+
+![Heatsink mass and support-risk screening](figures/heatsink_mass_and_support_risk.png)
+
+Therefore, the final CFD-3 candidate is thermally feasible but mechanically support-sensitive. A backplate, bracket, standoffs, or chassis-supported duct is recommended before treating the design as mechanically feasible.
+
+Detailed mechanical support documentation is available here:
+
+- [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
+
+## Earlier Mechanical-Thermal Screening
+
+Before the final CFD-3 design was selected, an analytical mechanical-thermal screening was performed to compare candidate heatsink geometries by thermal margin and estimated mass.
+
+![Mechanical feasibility margin versus mass](figures/mechanical_feasibility_margin_vs_mass.png)
+
+The screening showed that candidates with stronger thermal margin generally required larger heatsink mass. This created a tradeoff between thermal feasibility and mechanical support risk.
+
+![Estimated heatsink mass comparison](figures/mechanical_feasibility_mass_comparison.png)
+
+The mass comparison showed that several thermally attractive heatsink concepts were above the selected support-risk reference level. This supported the later conclusion that the final thermally passing design should include additional mechanical support such as a backplate, bracket, standoffs, or chassis-supported duct.
+
+## Documentation Links
+
+- [Analytical screening summary](docs/analytical_screening_summary.md)
+- [CFD-0 results](docs/cfd_0_results.md)
+- [CFD-2 results](docs/cfd_2_results.md)
+- [CFD-3 results](docs/cfd_3_results.md)
+- [CFD design iteration summary](docs/cfd_design_iteration_summary.md)
+- [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
+- [Final project summary](docs/final_project_summary.md)
+
 ## Project Structure
 
 ```text
@@ -197,12 +248,15 @@ pcie-ai-accelerator-thermal-design/
 │   ├── cooling_architecture_tradeoff.md
 │   ├── selected_cfd_case.md
 │   ├── mechanical_feasibility_check.md
+│   ├── mechanical_support_and_structural_feasibility.md
 │   ├── pre_cfd_readiness_checklist.md
+│   ├── analytical_screening_summary.md
 │   ├── cfd_0_build_steps.md
 │   ├── cfd_0_results.md
 │   ├── cfd_2_results.md
 │   ├── cfd_3_results.md
-│   └── cfd_design_iteration_summary.md
+│   ├── cfd_design_iteration_summary.md
+│   └── final_project_summary.md
 ├── python/
 │   ├── thermal_resistance_model.py
 │   ├── tim_sensitivity.py
@@ -210,7 +264,8 @@ pcie-ai-accelerator-thermal-design/
 │   ├── heatsink_analytical_model.py
 │   ├── heatsink_design_sweep.py
 │   ├── passive_fanless_heatsink_model.py
-│   └── vapor_chamber_spreading_model.py
+│   ├── vapor_chamber_spreading_model.py
+│   └── mechanical_support_check.py
 ├── results/
 │   ├── tim_sensitivity.csv
 │   ├── airflow_heat_capacity_check.csv
@@ -219,14 +274,18 @@ pcie-ai-accelerator-thermal-design/
 │   ├── heatsink_design_sweep_passing.csv
 │   ├── heatsink_design_sweep_robust_pass_both.csv
 │   ├── passive_fanless_heatsink_model.csv
-│   └── vapor_chamber_spreading_model.csv
+│   ├── vapor_chamber_spreading_model.csv
+│   └── mechanical_support_check.csv
 ├── figures/
 │   ├── baseline_tchip_vs_velocity.png
 │   ├── baseline_rhs_vs_velocity.png
 │   ├── robust_cfm_vs_tchip.png
 │   ├── robust_margin_vs_cfm.png
 │   ├── top_robust_candidates_tchip.png
-│   └── recommended_candidate_location.png
+│   ├── recommended_candidate_location.png
+│   ├── heatsink_mass_and_support_risk.png
+│   ├── mechanical_feasibility_margin_vs_mass.png
+│   └── mechanical_feasibility_mass_comparison.png
 └── cfd/
     ├── cfd_0_chip_tim_heatsink/
     │   ├── README.md
@@ -244,7 +303,7 @@ pcie-ai-accelerator-thermal-design/
     │   └── screenshots/
     │       ├── cfd_2_temperature_center_x_plane.png
     │       ├── cfd_2_static_pressure_center_x_plane.png
-    │       └── cfd_2_z_velocity_before_fin_plane.png
+    │       └── cfd_2_z_velocity_fin_entrance_plane.png
     │
     └── cfd_3_80x120x35_ducted_domain/
         ├── README.md
@@ -254,13 +313,9 @@ pcie-ai-accelerator-thermal-design/
             └── cfd_3_z_velocity_fin_entrance_plane.png
 ```
 
-The `docs/cfd_0_results.md` file contains the detailed first-pass CFD-0 reference result summary, heat balance, convergence assessment, limitations, and contour images.
-
-The `docs/cfd_2_results.md`, `docs/cfd_3_results.md`, and `docs/cfd_design_iteration_summary.md` files document the reduced-height heatsink CFD design iteration.
-
 ## Current Engineering Conclusion
 
-The project demonstrates a complete early-stage thermal design workflow:
+The project demonstrates a complete early-stage mechanical and thermal design workflow:
 
 1. define the PCIe-style board and heat loads
 2. calculate the required chip-to-air thermal resistance
@@ -271,7 +326,9 @@ The project demonstrates a complete early-stage thermal design workflow:
 7. diagnose airflow bypass in a reduced-height heatsink design
 8. improve cooling through ducting and heatsink length iteration
 9. check chip temperature, pressure drop, mass balance, and energy balance
-10. document limitations and next refinement steps
+10. estimate heatsink mass, weight force, and approximate bending moment
+11. classify mechanical support risk
+12. document limitations and next refinement steps
 
 The larger 80 mm × 100 mm × 50 mm forced-air heatsink reference case met the 85 °C chip-temperature target with a maximum chip temperature of approximately 75.97 °C.
 
@@ -279,4 +336,6 @@ A reduced-height 35 mm heatsink concept was then investigated through CFD design
 
 The final CFD-3 result supports the design direction that a ducted 80 mm × 120 mm × 35 mm aluminium heatsink can meet the simplified 250 W chip cooling target in this first-pass thermal feasibility model.
 
-This remains a portfolio-level engineering demonstrator and would require mesh sensitivity, turbulence or transition assessment, mechanical support checks, detailed PCB layout checks, and experimental correlation before being treated as a validated product design.
+However, concept-level mechanical screening estimates the final CFD-3 heatsink mass at approximately 424 g, with an approximate bending moment of 0.146 N·m. This places the final candidate in a high support-risk category. A backplate, bracket, standoffs, or chassis-supported duct is therefore recommended before treating the design as mechanically feasible.
+
+This remains a portfolio-level engineering demonstrator and would require mesh sensitivity, turbulence or transition assessment, detailed PCB layout checks, mechanical support design, PCB structural FEA, shock/vibration assessment, and experimental correlation before being treated as a validated product design.
