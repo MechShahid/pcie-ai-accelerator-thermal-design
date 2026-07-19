@@ -88,6 +88,14 @@ This project demonstrates more than simply running CFD. It shows a complete engi
 - heat-balance and mass-balance checking
 - honest documentation of assumptions and limitations
 
+## Mechanical Support Screening
+
+A concept-level mechanical support screening was added after the final CFD-3 thermal candidate was selected.
+
+The final ducted 80 × 120 × 35 mm aluminium heatsink has an estimated mass of approximately 424 g, weight force of approximately 4.16 N, and approximate bending moment of 0.146 N·m using a simplified 35 mm lever-arm assumption.
+
+This places the final heatsink candidate in a high support-risk category. Therefore, the design is thermally feasible but mechanically support-sensitive. A backplate, bracket, standoffs, or chassis-supported duct is recommended before treating the design as mechanically feasible.
+
 ## Limitations
 
 This remains a first-pass thermal feasibility study, not final product validation.
