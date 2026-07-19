@@ -36,6 +36,8 @@ The project followed a staged engineering workflow:
 8. Diagnosed airflow bypass in a reduced-height heatsink design.
 9. Improved the design using ducting and heatsink length iteration.
 10. Documented limitations and future validation requirements.
+11. Estimated heatsink mass, weight force, and approximate bending moment.
+12. Classified mechanical support risk and recommended support concepts.
 
 ## Main CFD Results
 
