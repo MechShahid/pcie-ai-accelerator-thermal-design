@@ -241,7 +241,7 @@ For a 250 W heat load and 10 K bulk coolant temperature rise, the required volum
 | Water-like coolant | 0.360 L/min |
 | Representative dielectric liquid | 0.714 L/min |
 
-![Required coolant flow](figures/liquid_flow_required_10K.png)
+![Required coolant flow](figures/liquid_flow_required.png)
 
 The component-level convective screening shows that coolant heat-carrying capacity alone does not predict chip temperature. Local heat-transfer coefficient and wetted area are also critical.
 
@@ -252,7 +252,7 @@ The component-level convective screening shows that coolant heat-carrying capaci
 | Spreader-only immersion flat plate | 521.5 K |
 | Finned immersion heat spreader | 88.8 K |
 
-![Component-level convective screening](figures/component_level_convective_screening.png)
+![Liquid convective screening](figures/liquid_convective_screening.png)
 
 The immersion-only progression shows why practical immersion cooling requires more than simply exposing the chip to dielectric liquid.
 
@@ -351,8 +351,8 @@ pcie-ai-accelerator-thermal-design/
 │   ├── heatsink_mass_and_support_risk.png
 │   ├── mechanical_feasibility_margin_vs_mass.png
 │   ├── mechanical_feasibility_mass_comparison.png
-│   ├── liquid_flow_required_10K.png
-│   ├── component_level_convective_screening.png
+│   ├── liquid_flow_required.png
+│   ├── liquid_convective_screening.png
 │   ├── immersion_architecture_progression.png
 │   └── cold_plate_flow_sensitivity.png
 └── cfd/
