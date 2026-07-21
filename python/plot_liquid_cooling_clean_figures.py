@@ -1,16 +1,14 @@
 # plot_liquid_cooling_clean_figures.py
-# Creates cleaner presentation-quality figures from the liquid cooling screening CSV files.
+# Creates presentation-quality figures from the liquid cooling screening CSV files.
 #
 # This script does not change the physics or calculations.
-# It only improves figure presentation:
-# - horizontal bars instead of default vertical bars
-# - shorter labels
-# - direct value annotations
-# - clearer separation between component-level screening and CFD-3 system-level reference
-# - cleaner immersion progression plot
+# It only improves figure presentation and produces:
+# - figures/liquid_flow_required.png
+# - figures/liquid_convective_screening.png
+# - figures/immersion_architecture_progression.png
+# - figures/cold_plate_flow_sensitivity.png
 
 from pathlib import Path
-import textwrap
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
@@ -34,52 +32,59 @@ CFD3_CHIP_RISE_K = 58.52
 
 
 # ============================================================
-# 2. HELPER FUNCTIONS
+# 2. STYLE HELPERS
 # ============================================================
 
-def wrap_label(text, width=24):
-    """Wrap long labels so axes do not need tilted text."""
-    return "\n".join(textwrap.wrap(str(text), width=width))
+def apply_common_style(ax):
+    ax.grid(True, which="both", axis="y", alpha=0.25)
+    ax.grid(True, which="major", axis="x", alpha=0.12)
+    ax.tick_params(axis="both", labelsize=11)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+
+
+def apply_log_y_plain_ticks(ax):
+    formatter = ScalarFormatter()
+    formatter.set_scientific(False)
+    ax.yaxis.set_major_formatter(formatter)
+
+
+def apply_log_x_plain_ticks(ax):
+    formatter = ScalarFormatter()
+    formatter.set_scientific(False)
+    ax.xaxis.set_major_formatter(formatter)
+
+
+def annotate_vertical_bars(ax, bars, values, unit, log_scale=True):
+    for bar, value in zip(bars, values):
+        x = bar.get_x() + bar.get_width() / 2
+        y = value * 1.08 if log_scale else value + 0.03 * max(values)
+        if value >= 100:
+            label = f"{value:.0f} {unit}"
+        elif value >= 10:
+            label = f"{value:.1f} {unit}"
+        else:
+            label = f"{value:.2f} {unit}"
+        ax.text(x, y, label, ha="center", va="bottom", fontsize=9)
 
 
 def short_fluid_name(name):
     mapping = {
         "Air": "Air",
-        "Water-like coolant": "Water-like coolant",
+        "Water-like coolant": "Water-like liquid",
         "Representative dielectric liquid": "Dielectric liquid",
     }
     return mapping.get(name, name)
 
 
-def short_case_name(name):
+def case_plot_name(name):
     mapping = {
-        "Air cooling CFD-3 reference": "Air cooling CFD-3 reference",
-        "Direct-to-chip cold plate": "Direct-to-chip cold plate",
-        "Bare immersion flat plate": "Bare immersion flat plate",
-        "Spreader-only immersion flat plate": "Spreader-only immersion flat plate",
-        "Finned immersion heat spreader": "Finned immersion heat spreader",
+        "Direct-to-chip cold plate": "Cold plate\n(minichannel)",
+        "Bare immersion flat plate": "Immersion\nbare 45 × 45 mm",
+        "Spreader-only immersion flat plate": "Immersion\nspread 80 × 80 mm",
+        "Finned immersion heat spreader": "Immersion\nfinned spreader",
     }
     return mapping.get(name, name)
-
-
-def annotate_horizontal_bars(ax, values, fmt_func, log_scale=True):
-    """Add value labels to horizontal bars."""
-    for i, value in enumerate(values):
-        x_text = value * 1.08 if log_scale else value * 1.01
-        ax.text(
-            x_text,
-            i,
-            fmt_func(value),
-            va="center",
-            fontsize=10,
-        )
-
-
-def set_plain_log_ticks(ax):
-    """Make log-axis tick labels easier to read."""
-    formatter = ScalarFormatter()
-    formatter.set_scientific(False)
-    ax.xaxis.set_major_formatter(formatter)
 
 
 # ============================================================
@@ -89,116 +94,144 @@ def set_plain_log_ticks(ax):
 flow_df = pd.read_csv(FLOW_FILE)
 h_df = pd.read_csv(H_FILE)
 
-flow_df["fluid_short"] = flow_df["fluid"].apply(short_fluid_name)
-h_df["case_short"] = h_df["case"].apply(short_case_name)
+flow_df["fluid_plot"] = flow_df["fluid"].apply(short_fluid_name)
+h_df["case_plot"] = h_df["case"].apply(case_plot_name)
+
+# Component-level rows only
+component_df = h_df[h_df["case"] != "Air cooling CFD-3 reference"].copy()
+
+case_order = [
+    "Direct-to-chip cold plate",
+    "Bare immersion flat plate",
+    "Spreader-only immersion flat plate",
+    "Finned immersion heat spreader",
+]
+
+component_df["plot_order"] = component_df["case"].apply(
+    lambda x: case_order.index(x) if x in case_order else 999
+)
+component_df = component_df.sort_values("plot_order")
 
 
 # ============================================================
 # 4. FIGURE 1:
-# REQUIRED COOLANT FLOW AT 10 K BULK TEMPERATURE RISE
+# FLOW REQUIRED FOR 5 K, 10 K, AND 15 K BULK RISE
 # ============================================================
 
-flow_10k = flow_df[flow_df["coolant_delta_T_K"] == 10.0].copy()
-
-flow_10k = flow_10k[[
-    "fluid_short",
-    "volume_flow_L_min",
-]].sort_values("volume_flow_L_min", ascending=True)
-
-fig, ax = plt.subplots(figsize=(10, 5.5))
-
-ax.barh(
-    flow_10k["fluid_short"],
-    flow_10k["volume_flow_L_min"],
+flow_pivot = flow_df.pivot_table(
+    index="coolant_delta_T_K",
+    columns="fluid_plot",
+    values="volume_flow_L_min",
+    aggfunc="first",
 )
 
-ax.set_xscale("log")
-ax.set_xlabel("Required volume flow rate [L/min, log scale]", fontsize=12)
+# Order columns deliberately
+flow_columns = ["Air", "Water-like liquid", "Dielectric liquid"]
+flow_pivot = flow_pivot[flow_columns]
+
+x_labels = [f"{int(x)} K" for x in flow_pivot.index]
+x = list(range(len(x_labels)))
+bar_width = 0.23
+
+fig, ax = plt.subplots(figsize=(11, 6.2))
+
+for i, col in enumerate(flow_columns):
+    offsets = [xi + (i - 1) * bar_width for xi in x]
+    bars = ax.bar(offsets, flow_pivot[col].values, width=bar_width, label=col)
+    annotate_vertical_bars(
+        ax,
+        bars,
+        flow_pivot[col].values,
+        "L/min",
+        log_scale=True,
+    )
+
+ax.set_yscale("log")
+ax.set_xticks(x)
+ax.set_xticklabels(x_labels)
+ax.set_xlabel("Allowed bulk coolant temperature rise, ΔT", fontsize=12)
+ax.set_ylabel("Required volume flow rate [L/min, log scale]", fontsize=12)
 ax.set_title(
-    "Coolant flow required to carry 250 W at 10 K bulk temperature rise",
-    fontsize=15,
+    "Coolant flow required to carry 250 W\nQ = m_dot cp ΔT",
+    fontsize=16,
 )
-ax.grid(True, axis="x", which="both", alpha=0.30)
-
-annotate_horizontal_bars(
-    ax,
-    flow_10k["volume_flow_L_min"].values,
-    lambda v: f"{v:.3f} L/min" if v < 10 else f"{v:.1f} L/min",
-    log_scale=True,
-)
-
-set_plain_log_ticks(ax)
-ax.tick_params(axis="both", labelsize=11)
+ax.legend(frameon=False, fontsize=11)
+apply_common_style(ax)
+apply_log_y_plain_ticks(ax)
 
 fig.tight_layout()
-fig.savefig(FIGURES_DIR / "liquid_flow_required_10K_clean.png", dpi=300)
+fig.savefig(FIGURES_DIR / "liquid_flow_required.png", dpi=300)
 plt.close(fig)
 
 
 # ============================================================
 # 5. FIGURE 2:
-# COMPONENT-LEVEL CONVECTIVE SCREENING
+# CONVECTIVE SCREENING, h AND SURFACE-TO-FLUID DELTA T
 # ============================================================
-# Air CFD-3 is NOT plotted as a bar because it is a system-level CFD result.
-# It is shown only as a dashed reference line.
 
-component_df = h_df[h_df["case_short"] != "Air cooling CFD-3 reference"].copy()
+x_labels = component_df["case_plot"].tolist()
+x = list(range(len(x_labels)))
 
-case_order = [
-    "Direct-to-chip cold plate",
-    "Finned immersion heat spreader",
-    "Spreader-only immersion flat plate",
-    "Bare immersion flat plate",
-]
+h_values = component_df["h_W_m2K"].values
+dt_values = component_df["surface_to_fluid_delta_T_K"].values
 
-component_df["plot_order"] = component_df["case_short"].apply(
-    lambda x: case_order.index(x) if x in case_order else 999
-)
+fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
 
-component_df = component_df.sort_values("plot_order")
-component_df["case_plot"] = component_df["case_short"].apply(
-    lambda x: wrap_label(x, width=26)
-)
+# Left: heat-transfer coefficient h
+ax = axes[0]
+bars_h = ax.bar(x, h_values)
+ax.set_yscale("log")
+ax.set_xticks(x)
+ax.set_xticklabels(x_labels)
+ax.set_ylabel("Convective heat-transfer coefficient, h [W/m²K, log scale]", fontsize=12)
+ax.set_title("Heat-transfer coefficient\ncomponent-level screening", fontsize=15)
 
-fig, ax = plt.subplots(figsize=(11, 6.5))
+annotate_vertical_bars(ax, bars_h, h_values, "W/m²K", log_scale=True)
 
-ax.barh(
-    component_df["case_plot"],
-    component_df["surface_to_fluid_delta_T_K"],
-)
+apply_common_style(ax)
+apply_log_y_plain_ticks(ax)
 
-ax.set_xscale("log")
-ax.set_xlabel(
-    "Estimated surface-to-fluid temperature rise [K, log scale]",
-    fontsize=12,
-)
-ax.set_title(
-    "Convective screening: effect of cooling architecture and wetted area",
-    fontsize=15,
-)
-ax.grid(True, axis="x", which="both", alpha=0.30)
+# Right: surface-to-fluid delta T
+ax = axes[1]
+bars_dt = ax.bar(x, dt_values)
+ax.set_yscale("log")
+ax.set_xticks(x)
+ax.set_xticklabels(x_labels)
+ax.set_ylabel("Surface-to-fluid temperature rise, ΔT [K, log scale]", fontsize=12)
+ax.set_title("Surface-to-fluid temperature rise\ncomponent-level screening", fontsize=15)
 
-ax.axvline(
+annotate_vertical_bars(ax, bars_dt, dt_values, "K", log_scale=True)
+
+ax.axhline(
     CFD3_CHIP_RISE_K,
     linestyle="--",
-    linewidth=2,
-    label=f"CFD-3 air-cooled chip rise above inlet = {CFD3_CHIP_RISE_K:.2f} K",
+    linewidth=1.8,
+    color="black",
+    alpha=0.7,
 )
 
-ax.legend(loc="lower right", fontsize=10)
-
-annotate_horizontal_bars(
-    ax,
-    component_df["surface_to_fluid_delta_T_K"].values,
-    lambda v: f"{v:.1f} K",
-    log_scale=True,
+ax.text(
+    1.65,
+    CFD3_CHIP_RISE_K * 1.16,
+    "CFD-3 air-cooled chip rise = 58.52 K\n"
+    "system-level reference only",
+    ha="center",
+    va="bottom",
+    fontsize=9,
+    style="italic",
 )
 
-set_plain_log_ticks(ax)
-ax.tick_params(axis="both", labelsize=11)
+apply_common_style(ax)
+apply_log_y_plain_ticks(ax)
+
+fig.suptitle(
+    "Liquid and immersion cooling screening: h, area, and architecture effects",
+    fontsize=17,
+    y=1.02,
+)
 
 fig.tight_layout()
-fig.savefig(FIGURES_DIR / "component_level_convective_screening_clean.png", dpi=300)
+fig.savefig(FIGURES_DIR / "liquid_convective_screening.png", dpi=300, bbox_inches="tight")
 plt.close(fig)
 
 
@@ -206,82 +239,74 @@ plt.close(fig)
 # 6. FIGURE 3:
 # IMMERSION ARCHITECTURE PROGRESSION
 # ============================================================
-# This shows the design logic:
-# bare chip immersion -> flat spreader -> finned spreader
 
-immersion_df = h_df[h_df["case_short"].isin([
-    "Bare immersion flat plate",
-    "Spreader-only immersion flat plate",
-    "Finned immersion heat spreader",
-])].copy()
-
-immersion_order = [
+immersion_cases = [
     "Bare immersion flat plate",
     "Spreader-only immersion flat plate",
     "Finned immersion heat spreader",
 ]
 
-immersion_df["plot_order"] = immersion_df["case_short"].apply(
-    lambda x: immersion_order.index(x)
-)
-
+immersion_df = h_df[h_df["case"].isin(immersion_cases)].copy()
+immersion_df["plot_order"] = immersion_df["case"].apply(immersion_cases.index)
 immersion_df = immersion_df.sort_values("plot_order")
 
 x_labels = [
-    "Bare immersion\n45 × 45 mm chip",
-    "Spreader-only\n80 × 80 mm",
+    "Bare chip immersion\n45 × 45 mm",
+    "Flat spreader\n80 × 80 mm",
     "Finned spreader\n80 × 80 mm",
 ]
 
-y_values = immersion_df["surface_to_fluid_delta_T_K"].values
+dt_values = immersion_df["surface_to_fluid_delta_T_K"].values
 
-fig, ax = plt.subplots(figsize=(9.5, 5.5))
+fig, ax = plt.subplots(figsize=(10, 5.8))
 
 ax.plot(
-    x_labels,
-    y_values,
+    range(len(x_labels)),
+    dt_values,
     marker="o",
-    linewidth=2,
+    linewidth=2.5,
 )
 
 ax.set_yscale("log")
-ax.set_ylabel(
-    "Estimated surface-to-fluid temperature rise [K, log scale]",
-    fontsize=12,
-)
-ax.set_title(
-    "Immersion architecture progression",
-    fontsize=15,
-)
-ax.grid(True, axis="y", which="both", alpha=0.30)
+ax.set_xticks(range(len(x_labels)))
+ax.set_xticklabels(x_labels)
+ax.set_ylabel("Surface-to-fluid temperature rise, ΔT [K, log scale]", fontsize=12)
+ax.set_title("Immersion architecture progression", fontsize=16)
 
-for x, y in zip(x_labels, y_values):
+for i, value in enumerate(dt_values):
     ax.text(
-        x,
-        y * 1.08,
-        f"{y:.1f} K",
+        i,
+        value * 1.10,
+        f"{value:.1f} K",
         ha="center",
+        va="bottom",
         fontsize=10,
     )
 
 ax.axhline(
     CFD3_CHIP_RISE_K,
     linestyle="--",
-    linewidth=2,
+    linewidth=1.8,
+    color="black",
+    alpha=0.7,
 )
 
 ax.text(
     1,
-    CFD3_CHIP_RISE_K * 1.10,
-    f"CFD-3 air-cooled chip-rise reference = {CFD3_CHIP_RISE_K:.2f} K",
+    CFD3_CHIP_RISE_K * 1.15,
+    "CFD-3 air-cooled chip-rise reference = 58.52 K\n"
+    "not directly comparable to component-level bars",
     ha="center",
-    fontsize=10,
+    va="bottom",
+    fontsize=9,
+    style="italic",
 )
 
-ax.tick_params(axis="both", labelsize=11)
+apply_common_style(ax)
+apply_log_y_plain_ticks(ax)
 
 fig.tight_layout()
-fig.savefig(FIGURES_DIR / "immersion_architecture_progression_clean.png", dpi=300)
+fig.savefig(FIGURES_DIR / "immersion_architecture_progression.png", dpi=300)
 plt.close(fig)
 
 
@@ -289,59 +314,55 @@ plt.close(fig)
 # 7. FIGURE 4:
 # COLD-PLATE FLOW SENSITIVITY
 # ============================================================
-# This is useful, but should be treated as an appendix/supporting figure.
-# The laminar part uses a simplified fully developed constant-Nu model.
 
 if COLD_PLATE_FILE.exists():
     cp_df = pd.read_csv(COLD_PLATE_FILE)
 
-    fig, ax = plt.subplots(figsize=(9.5, 5.5))
+    fig, ax = plt.subplots(figsize=(10, 5.8))
 
     ax.plot(
         cp_df["water_volume_flow_L_min"],
         cp_df["surface_to_fluid_delta_T_K"],
         marker="o",
-        linewidth=2,
+        linewidth=2.3,
     )
 
     ax.set_xscale("log")
     ax.set_yscale("log")
 
-    ax.set_xlabel(
-        "Water-like coolant flow rate [L/min, log scale]",
-        fontsize=12,
-    )
-    ax.set_ylabel(
-        "Estimated surface-to-fluid temperature rise [K, log scale]",
-        fontsize=12,
-    )
-    ax.set_title(
-        "Cold-plate flow sensitivity under simplified Nu model",
-        fontsize=15,
-    )
-
-    ax.grid(True, which="both", alpha=0.30)
+    ax.set_xlabel("Water-like coolant flow rate [L/min, log scale]", fontsize=12)
+    ax.set_ylabel("Surface-to-fluid temperature rise, ΔT [K, log scale]", fontsize=12)
+    ax.set_title("Cold-plate flow sensitivity under simplified Nu model", fontsize=16)
 
     for _, row in cp_df.iterrows():
         ax.text(
             row["water_volume_flow_L_min"] * 1.05,
-            row["surface_to_fluid_delta_T_K"] * 1.03,
+            row["surface_to_fluid_delta_T_K"] * 1.05,
             f"{row['surface_to_fluid_delta_T_K']:.1f} K",
             fontsize=9,
         )
 
     ax.text(
         0.03,
-        0.05,
-        "Note: laminar branch uses constant Nu = 4.12;\n"
-        "developing-flow effects are not included.",
+        0.06,
+        "Laminar branch uses constant Nu = 4.12.\n"
+        "Developing-flow effects and pressure drop are not included.",
         transform=ax.transAxes,
         fontsize=9,
         va="bottom",
+        bbox=dict(facecolor="white", alpha=0.75, edgecolor="none"),
     )
 
+    ax.grid(True, which="both", alpha=0.25)
+    ax.tick_params(axis="both", labelsize=11)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+
+    apply_log_x_plain_ticks(ax)
+    apply_log_y_plain_ticks(ax)
+
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "cold_plate_flow_sensitivity_clean.png", dpi=300)
+    fig.savefig(FIGURES_DIR / "cold_plate_flow_sensitivity.png", dpi=300)
     plt.close(fig)
 
 
@@ -349,14 +370,13 @@ if COLD_PLATE_FILE.exists():
 # 8. PRINT OUTPUT
 # ============================================================
 
-print("Clean figures generated successfully.")
+print("Updated liquid-cooling figures generated successfully.")
 print()
 print("Saved files:")
-print(f"- {FIGURES_DIR / 'liquid_flow_required_10K_clean.png'}")
-print(f"- {FIGURES_DIR / 'component_level_convective_screening_clean.png'}")
-print(f"- {FIGURES_DIR / 'immersion_architecture_progression_clean.png'}")
-
+print(f"- {FIGURES_DIR / 'liquid_flow_required.png'}")
+print(f"- {FIGURES_DIR / 'liquid_convective_screening.png'}")
+print(f"- {FIGURES_DIR / 'immersion_architecture_progression.png'}")
 if COLD_PLATE_FILE.exists():
-    print(f"- {FIGURES_DIR / 'cold_plate_flow_sensitivity_clean.png'}")
+    print(f"- {FIGURES_DIR / 'cold_plate_flow_sensitivity.png'}")
 else:
-    print("- cold_plate_flow_sensitivity_clean.png skipped because cold_plate_flow_sensitivity.csv was not found.")
+    print("- cold_plate_flow_sensitivity.png skipped because CSV was not found.")
