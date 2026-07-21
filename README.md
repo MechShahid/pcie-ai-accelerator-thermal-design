@@ -4,7 +4,7 @@
 
 This project develops a simplified mechanical and thermal design workflow for a high-power PCIe-style AI accelerator card. The goal is to demonstrate practical board-level electronics cooling judgement for accelerator-card applications.
 
-The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, airflow-bypass diagnosis, and concept-level mechanical support screening.
+The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, airflow-bypass diagnosis, concept-level mechanical support screening, and a liquid/immersion cooling screening extension.
 
 This is an original engineering demonstrator. It is not a reverse-engineered commercial accelerator card and does not claim production qualification.
 
@@ -20,6 +20,9 @@ Modern AI accelerator cards can dissipate high chip-level power and require care
 - How sensitive is the design to TIM thickness, TIM conductivity, and airflow rate?
 - How does airflow bypass affect a lower-height heatsink?
 - Does the final heatsink concept create mechanical support risk?
+- How much lower is the required volumetric flow for liquid coolants compared with air?
+- Why does coolant heat-carrying capacity alone not guarantee low chip temperature?
+- How do cold plates, bare immersion, heat spreading, and finned immersed surfaces differ at screening level?
 - How would the simulation be validated against physical thermal testing?
 
 The purpose of this project is to show the workflow behind these decisions, not only the final simulation result.
@@ -213,6 +216,60 @@ Detailed mechanical support documentation is available here:
 
 - [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
 
+## Liquid and Immersion Cooling Extension
+
+A liquid and immersion cooling screening extension was added to compare the same 250 W chip heat load using simple first-principles and empirical-correlation calculations.
+
+The purpose of this extension is to connect the original forced-air PCIe accelerator workflow to liquid-cooling and immersion-cooling design questions relevant to high-power AI and HPC hardware.
+
+The extension compares:
+
+- coolant heat-carrying capacity using `Q = m_dot cp ΔT`
+- direct-to-chip water-like minichannel cold-plate cooling
+- bare single-phase dielectric immersion over the chip footprint
+- idealized 80 mm × 80 mm spreader-only immersion
+- idealized 80 mm × 80 mm finned immersed heat-spreader cooling
+- cold-plate and immersion directed-flow sensitivity
+
+This extension is a screening-level study only. The air-cooled CFD-3 result is treated as a system-level CFD reference, while the liquid and immersion cases are component-level convective estimates.
+
+For a 250 W heat load and 10 K bulk coolant temperature rise, the required volume flow rates are:
+
+| Fluid | Required volume flow |
+|---|---:|
+| Air | 1242.54 L/min |
+| Water-like coolant | 0.360 L/min |
+| Representative dielectric liquid | 0.714 L/min |
+
+![Required coolant flow](figures/liquid_flow_required_10K.png)
+
+The component-level convective screening shows that coolant heat-carrying capacity alone does not predict chip temperature. Local heat-transfer coefficient and wetted area are also critical.
+
+| Case | Estimated surface-to-fluid temperature rise |
+|---|---:|
+| Direct-to-chip cold plate | 44.95 K |
+| Bare immersion flat plate | 927.2 K |
+| Spreader-only immersion flat plate | 521.5 K |
+| Finned immersion heat spreader | 88.8 K |
+
+![Component-level convective screening](figures/component_level_convective_screening.png)
+
+The immersion-only progression shows why practical immersion cooling requires more than simply exposing the chip to dielectric liquid.
+
+```text
+Bare chip immersion → flat heat spreader → finned immersed spreader
+```
+
+![Immersion architecture progression](figures/immersion_architecture_progression.png)
+
+The cold-plate flow sensitivity is included as a supporting figure because it depends strongly on the simplified Nusselt-number model. The baseline cold plate is laminar, and the estimated thermal entrance length is longer than the 50 mm channel length, meaning developing-flow effects may be important.
+
+![Cold-plate flow sensitivity](figures/cold_plate_flow_sensitivity.png)
+
+Detailed liquid and immersion cooling documentation is available here:
+
+- [Liquid and immersion cooling extension](docs/liquid_cooling_extension.md)
+
 ## Earlier Mechanical-Thermal Screening
 
 Before the final CFD-3 design was selected, an analytical mechanical-thermal screening was performed to compare candidate heatsink geometries by thermal margin and estimated mass.
@@ -233,6 +290,7 @@ The mass comparison showed that several thermally attractive heatsink concepts w
 - [CFD-3 results](docs/cfd_3_results.md)
 - [CFD design iteration summary](docs/cfd_design_iteration_summary.md)
 - [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
+- [Liquid and immersion cooling extension](docs/liquid_cooling_extension.md)
 - [Final project summary](docs/final_project_summary.md)
 
 ## Project Structure
@@ -249,6 +307,7 @@ pcie-ai-accelerator-thermal-design/
 │   ├── selected_cfd_case.md
 │   ├── mechanical_feasibility_check.md
 │   ├── mechanical_support_and_structural_feasibility.md
+│   ├── liquid_cooling_extension.md
 │   ├── pre_cfd_readiness_checklist.md
 │   ├── analytical_screening_summary.md
 │   ├── cfd_0_build_steps.md
@@ -265,7 +324,9 @@ pcie-ai-accelerator-thermal-design/
 │   ├── heatsink_design_sweep.py
 │   ├── passive_fanless_heatsink_model.py
 │   ├── vapor_chamber_spreading_model.py
-│   └── mechanical_support_check.py
+│   ├── mechanical_support_check.py
+│   ├── liquid_cooling_screening.py
+│   └── plot_liquid_cooling_clean_figures.py
 ├── results/
 │   ├── tim_sensitivity.csv
 │   ├── airflow_heat_capacity_check.csv
@@ -275,7 +336,11 @@ pcie-ai-accelerator-thermal-design/
 │   ├── heatsink_design_sweep_robust_pass_both.csv
 │   ├── passive_fanless_heatsink_model.csv
 │   ├── vapor_chamber_spreading_model.csv
-│   └── mechanical_support_check.csv
+│   ├── mechanical_support_check.csv
+│   ├── flow_rate_comparison.csv
+│   ├── h_screening_summary.csv
+│   ├── cold_plate_flow_sensitivity.csv
+│   └── immersion_velocity_sensitivity.csv
 ├── figures/
 │   ├── baseline_tchip_vs_velocity.png
 │   ├── baseline_rhs_vs_velocity.png
@@ -285,7 +350,11 @@ pcie-ai-accelerator-thermal-design/
 │   ├── recommended_candidate_location.png
 │   ├── heatsink_mass_and_support_risk.png
 │   ├── mechanical_feasibility_margin_vs_mass.png
-│   └── mechanical_feasibility_mass_comparison.png
+│   ├── mechanical_feasibility_mass_comparison.png
+│   ├── liquid_flow_required_10K.png
+│   ├── component_level_convective_screening.png
+│   ├── immersion_architecture_progression.png
+│   └── cold_plate_flow_sensitivity.png
 └── cfd/
     ├── cfd_0_chip_tim_heatsink/
     │   ├── README.md
@@ -328,7 +397,8 @@ The project demonstrates a complete early-stage mechanical and thermal design wo
 9. check chip temperature, pressure drop, mass balance, and energy balance
 10. estimate heatsink mass, weight force, and approximate bending moment
 11. classify mechanical support risk
-12. document limitations and next refinement steps
+12. extend the workflow with liquid and immersion cooling screening
+13. document limitations and next refinement steps
 
 The larger 80 mm × 100 mm × 50 mm forced-air heatsink reference case met the 85 °C chip-temperature target with a maximum chip temperature of approximately 75.97 °C.
 
@@ -338,4 +408,6 @@ The final CFD-3 result supports the design direction that a ducted 80 mm × 120 
 
 However, concept-level mechanical screening estimates the final CFD-3 heatsink mass at approximately 424 g, with an approximate bending moment of 0.146 N·m. This places the final candidate in a high support-risk category. A backplate, bracket, standoffs, or chassis-supported duct is therefore recommended before treating the design as mechanically feasible.
 
-This remains a portfolio-level engineering demonstrator and would require mesh sensitivity, turbulence or transition assessment, detailed PCB layout checks, mechanical support design, PCB structural FEA, shock/vibration assessment, and experimental correlation before being treated as a validated product design.
+The liquid and immersion cooling extension shows that liquid coolants can carry the same 250 W heat load with far lower volumetric flow than air. However, coolant heat-carrying capacity alone does not predict chip-level temperature. The screening results show that local heat-transfer coefficient, wetted area, heat spreading, and flow architecture are critical. Bare dielectric immersion over only the chip footprint is not sufficient in the simplified model, while an idealized finned immersed heat spreader strongly reduces the estimated surface-to-fluid temperature rise.
+
+This remains a portfolio-level engineering demonstrator and would require mesh sensitivity, turbulence or transition assessment, detailed PCB layout checks, mechanical support design, PCB structural FEA, shock/vibration assessment, liquid-cooling pressure-drop modelling, immersion-system CFD, and experimental correlation before being treated as a validated product design.
