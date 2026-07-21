@@ -1,137 +1,196 @@
-\# References
+# References
 
-
-
-\## Purpose of This Document
-
-
+## Purpose of This Document
 
 This document records the sources and reference categories used for the simplified mechanical and thermal design workflow of a 250 W PCIe AI accelerator card.
 
-
-
 The goal is to clearly separate sourced information from engineering assumptions.
-
-
 
 This project is an original engineering demonstrator. It is not copied from a commercial accelerator card.
 
+---
 
+## Reference Categories
 
-\## Reference Categories
-
-
-
-The project uses four types of references:
-
-
+The project uses the following reference categories:
 
 | Category | Meaning |
-
 |---|---|
-
 | Standard / form-factor reference | Used for PCIe-style card envelope dimensions |
-
-| Engineering handbook / material reference | Used for typical material properties |
-
+| Standard equation / correlation | Used for heat-transfer and fluid-mechanics relations such as Reynolds number, Nusselt number, flat-plate convection, and fin efficiency |
+| Engineering handbook / material reference | Used for typical material and fluid properties |
 | Vendor datasheet / product reference | Used only when a specific value is taken from a public datasheet |
-
+| Internal project result | Used for results produced within this repository, such as CFD-3 chip temperature, pressure drop, and heat-balance outputs |
 | Engineering assumption | Used when no product-specific source is available |
 
+---
 
-
-\## PCIe Form-Factor References
-
-
+## PCIe Form-Factor References
 
 The baseline model uses a PCIe-style standard-height, half-length add-in card envelope.
 
-
-
-| Parameter | Value | Reference Type |
-
+| Parameter | Value | Reference type |
 |---|---:|---|
-
 | Card length | 167.65 mm | PCIe add-in-card form-factor reference |
-
 | Card height | 111.15 mm | PCIe add-in-card form-factor reference |
-
 | PCB thickness | 1.6 mm | Common PCB engineering assumption |
-
-
 
 These values define the simplified mechanical envelope only. The project does not model the complete PCIe connector, bracket retention feature, chassis interface, or compliance details.
 
+---
 
-
-\## M.2 Context References
-
-
+## M.2 Context References
 
 M.2 is included only as context for compact accelerator modules.
 
-
-
-| M.2 Type | Width | Length |
-
+| M.2 type | Width | Length |
 |---|---:|---:|
-
 | M.2 2280 | 22 mm | 80 mm |
-
-
 
 M.2 is not the main focus of the first project version. It may be considered later as an optional compact-module extension.
 
+---
 
-
-\## Material Property References
-
-
+## Material Property References
 
 The following material values are used as first-version assumptions and should be replaced by specific datasheet values if a later detailed model requires it.
 
+| Material | Typical thermal conductivity range | Reference status |
+|---|---:|---|
+| FR4 through-plane equivalent | approximately 0.3 W/mK | Engineering handbook / typical PCB assumption |
+| Silicon | approximately 100 to 150 W/mK | Engineering handbook / semiconductor material reference |
+| Aluminium 6061 / 6063 | approximately 167 to 200 W/mK | Engineering handbook / material reference |
+| Copper | approximately 385 to 400 W/mK | Engineering handbook / material reference |
+| TIM | 3, 6, 8 W/mK sensitivity values | Engineering assumption / sensitivity range |
 
+---
 
-| Material | Typical Thermal Conductivity Range |
+## Thermal Design Reference Equations
 
-|---|---:|
+### Required chip-to-air thermal resistance
 
-| FR4 through-plane equivalent | approximately 0.3 W/mK |
-
-| Silicon | approximately 100 to 150 W/mK |
-
-| Aluminum 6061 / 6063 | approximately 167 to 200 W/mK |
-
-| Copper | approximately 385 to 400 W/mK |
-
-| TIM | 3, 6, 8 W/mK sensitivity values |
-
-
-
-\## Thermal Design Reference Equations
-
-
-
-\### Required Chip-to-Air Thermal Resistance
-
-
+The required chip-to-air thermal resistance is calculated as:
 
 ```text
+R_required = (T_chip,max - T_air,inlet) / Q_chip
+```
 
-R\_required = (T\_chip,max - T\_air,inlet) / Q\_chip
+For this project:
 
-## Liquid and Immersion Cooling Screening References
+```text
+R_required = (85 - 25) / 250
+R_required = 0.24 K/W
+```
+
+This is a standard thermal-resistance sizing relation used for first-order electronics cooling estimates.
+
+Reference category: standard heat-transfer equation.
+
+---
+
+## Airflow Heat-Carrying Capacity
+
+The airflow heat-carrying capacity is estimated from:
+
+```text
+Q = m_dot cp ΔT
+```
+
+where:
+
+| Symbol | Meaning |
+|---|---|
+| Q | heat load |
+| m_dot | air mass flow rate |
+| cp | specific heat capacity |
+| ΔT | bulk air temperature rise |
+
+This relation is used for first-pass airflow sanity checks.
+
+Reference category: standard first-law steady-flow heat balance.
+
+---
+
+## Forced-Air Heatsink Screening References
+
+The analytical forced-air heatsink screening uses simplified heat-transfer and airflow calculations to estimate whether a candidate aluminium finned heatsink can meet the 250 W chip-level cooling target.
+
+The simplified heatsink screening includes:
+
+- thermal-resistance estimation,
+- airflow heat-capacity checks,
+- fin-channel heat-transfer estimates,
+- pressure-drop sanity checks,
+- sensitivity to TIM conductivity and thickness,
+- sensitivity to airflow velocity.
+
+These calculations are used only for first-pass candidate selection before CFD. They are not treated as final product validation.
+
+Reference category: standard electronics-cooling and heat-transfer textbook methods.
+
+---
+
+## CFD Reference Status
+
+The CFD cases in this repository are internal project results.
+
+| Case | Status | Reference type |
+|---|---|---|
+| CFD-0 | First-pass forced-air reference case | Internal project result |
+| CFD-1 | Reduced-height open/bypass case | Internal project result |
+| CFD-2 | Reduced-height ducted 100 mm case | Internal project result |
+| CFD-3 | Reduced-height ducted 120 mm final thermal candidate | Internal project result |
+
+The CFD-3 result is used later as a system-level reference for comparison with the liquid and immersion screening extension.
+
+| Quantity | CFD-3 value |
+|---|---:|
+| Maximum chip temperature | 83.52 °C |
+| Chip rise above 25 °C inlet | 58.52 K |
+| Pressure drop | 49.02 Pa |
+
+The CFD-3 result is a system-level ANSYS Fluent conjugate heat-transfer result. It includes chip, TIM, heatsink, and airflow effects.
+
+---
+
+## Mechanical Support Screening References
+
+The concept-level mechanical support screening estimates heatsink volume, mass, weight force, and approximate bending moment.
+
+The simplified bending moment is estimated as:
+
+```text
+M = W L
+```
+
+where:
+
+| Symbol | Meaning |
+|---|---|
+| M | approximate bending moment |
+| W | heatsink weight force |
+| L | assumed lever arm |
+
+This is only a first-pass mechanical support check. It is not a detailed PCB structural FEA, PCIe compliance check, shock/vibration assessment, or bracket design.
+
+Reference category: first-order mechanics / engineering assumption.
+
+---
+
+# Liquid and Immersion Cooling Screening References
 
 A liquid and immersion cooling extension was added as a screening-level comparison to the forced-air PCIe accelerator workflow.
 
 This extension uses first-principles heat-balance equations, representative fluid properties, and simplified empirical heat-transfer correlations. It is not based on a specific commercial immersion system, pump, dielectric coolant product, or cold-plate datasheet.
 
-### Reference status
+---
+
+## Liquid Cooling Reference Status
 
 | Item | Reference status |
 |---|---|
 | Heat balance equation | Standard first-law steady-flow heat balance |
-| Reynolds number | Standard fluid mechanics definition |
+| Reynolds number | Standard fluid-mechanics definition |
 | Prandtl number | Standard heat-transfer definition |
 | Nusselt-number use | Standard convective heat-transfer formulation |
 | Flat-plate forced-convection correlation | Standard empirical heat-transfer correlation |
@@ -147,7 +206,7 @@ This extension uses first-principles heat-balance equations, representative flui
 
 ---
 
-### Coolant heat-carrying capacity
+## Coolant Heat-Carrying Capacity
 
 The required coolant flow rate is estimated from the steady heat balance:
 
@@ -170,7 +229,7 @@ Reference category: standard heat-transfer textbook / first-principles thermodyn
 
 ---
 
-### Dimensionless groups
+## Dimensionless Groups
 
 The Reynolds number is calculated as:
 
@@ -206,7 +265,7 @@ Reference category: standard fluid mechanics and convective heat-transfer defini
 
 ---
 
-### Direct-to-chip cold-plate screening
+## Direct-to-Chip Cold-Plate Screening
 
 The cold-plate estimate uses a simplified internal-flow minichannel model.
 
@@ -243,7 +302,7 @@ Reference category: standard internal-flow heat-transfer textbook correlation.
 
 ---
 
-### Single-phase immersion cooling screening
+## Single-Phase Immersion Cooling Screening
 
 The single-phase dielectric immersion cases use a simplified laminar external forced-convection flat-plate correlation:
 
@@ -277,7 +336,7 @@ Reference category: standard external forced-convection heat-transfer textbook c
 
 ---
 
-### Fin efficiency equation
+## Fin Efficiency Equation
 
 The finned immersion heat-spreader case uses a straight rectangular fin efficiency approximation:
 
@@ -307,7 +366,7 @@ Reference category: standard extended-surface heat-transfer textbook model.
 
 ---
 
-### Representative fluid properties used
+## Representative Fluid Properties Used
 
 The fluid properties are representative screening values and are not tied to one exact commercial product.
 
@@ -323,23 +382,9 @@ The dielectric-liquid values are intentionally labelled as representative assump
 
 ---
 
-### Internal project reference
+## Bibliography / Sources to Cite
 
-The air-cooled CFD-3 result is used as an internal project reference only.
-
-| Quantity | Value |
-|---|---:|
-| CFD-3 maximum chip temperature | 83.52 °C |
-| CFD-3 chip rise above 25 °C inlet | 58.52 K |
-| CFD-3 pressure drop | 49.02 Pa |
-
-The CFD-3 result is a system-level ANSYS Fluent conjugate heat-transfer result. It includes the chip, TIM, heatsink, and air flow. The liquid and immersion cases are component-level convective screening estimates. Therefore, CFD-3 should not be treated as a directly equivalent bar in the liquid/immersion component-level comparison.
-
----
-
-### Bibliography / sources to cite
-
-The following sources support the equations, correlations, and property assumptions used in the liquid and immersion screening extension.
+The following sources support the equations, correlations, and property assumptions used in this project.
 
 1. Incropera, F. P., DeWitt, D. P., Bergman, T. L., and Lavine, A. S.  
    *Fundamentals of Heat and Mass Transfer*.  
@@ -361,3 +406,9 @@ The following sources support the equations, correlations, and property assumpti
 
 6. Vendor technical data sheets for single-phase immersion fluids, such as FUCHS and Shell immersion-cooling fluids.  
    Used only to justify the statement that dielectric-fluid properties are product-dependent. The current model does not use one exact commercial coolant product.
+
+---
+
+## Reference Caveat
+
+The correlations used in this project are standard screening-level heat-transfer correlations. They are appropriate for first-pass engineering estimates, but they do not replace detailed CFD, product-specific coolant data, pressure-drop modelling, or experimental validation.
