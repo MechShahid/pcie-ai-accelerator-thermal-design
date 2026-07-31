@@ -92,3 +92,6 @@ results/README.md
 screenshots/cfd_4a_temperature_solid_surfaces.png
 screenshots/cfd_4a_temperature_isometric_solid_surfaces.png
 screenshots/cfd_4a_static_pressure_center_x_plane.png
+```
+
+The Fluent case/data files were generated locally but are not included in the GitHub repository because they exceed the normal GitHub web-upload file-size limit.
