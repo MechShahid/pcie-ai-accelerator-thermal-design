@@ -86,6 +86,15 @@ The temperature visualization is shown on the solid component surfaces for clari
 The pressure visualization is shown on a centre X-plane using a manual static-pressure range of 0 to 90 Pa, consistent with the CFD-4B pressure drop of approximately 83.84 Pa.
 
 ---
+## Result images
+
+### Temperature on solid surfaces
+
+![CFD-4B temperature solid surfaces](screenshots/cfd_4b_temperature_solid_surfaces.png)
+
+### Static pressure on centre X-plane
+
+![CFD-4B static pressure centre X-plane](screenshots/cfd_4b_static_pressure_center_x_plane.png)
 
 ## Files
 
