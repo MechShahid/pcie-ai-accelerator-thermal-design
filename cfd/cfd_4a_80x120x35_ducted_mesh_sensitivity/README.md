@@ -87,8 +87,7 @@ An additional isometric solid-surface temperature image is included to show the 
 ## Files
 
 ```text
-results/cfd_4a_refined_mesh_700iter.cas.h5
-results/cfd_4a_refined_mesh_700iter.dat.h5
+results/README.md
 
 screenshots/cfd_4a_temperature_solid_surfaces.png
 screenshots/cfd_4a_temperature_isometric_solid_surfaces.png
