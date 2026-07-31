@@ -156,7 +156,30 @@ The final ducted heatsink design remains thermally feasible under both laminar a
 
 ---
 
+## Result images
+
+### Temperature on solid surfaces
+
+![CFD-4A temperature solid surfaces](../cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_temperature_solid_surfaces.png)
+
+### Isometric temperature view
+
+![CFD-4A isometric temperature solid surfaces](../cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_temperature_isometric_solid_surfaces.png)
+
+### Static pressure on centre X-plane
+
+![CFD-4A static pressure centre X-plane](../cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_static_pressure_center_x_plane.png)
+
+---
+
 ## Files generated
+
+```text
+cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/results/README.md
+
+cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_temperature_solid_surfaces.png
+cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_temperature_isometric_solid_surfaces.png
+cfd/cfd_4a_80x120x35_ducted_mesh_sensitivity/screenshots/cfd_4a_static_pressure_center_x_plane.png
 
 ```text
 cfd/cfd_4b_80x120x35_ducted_sst_sensitivity/results/cfd_4b_sst_700iter.cas.h5
