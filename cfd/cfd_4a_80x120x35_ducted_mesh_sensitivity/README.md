@@ -84,6 +84,23 @@ An additional isometric solid-surface temperature image is included to show the 
 
 ---
 
+## Result images
+
+### Temperature on solid surfaces
+
+![CFD-4A temperature solid surfaces](screenshots/cfd_4a_temperature_solid_surfaces.png)
+
+### Isometric temperature view
+
+![CFD-4A isometric temperature solid surfaces](screenshots/cfd_4a_temperature_isometric_solid_surfaces.png)
+
+### Static pressure on centre X-plane
+
+![CFD-4A static pressure centre X-plane](screenshots/cfd_4a_static_pressure_center_x_plane.png)
+
+---
+
+## Files
 ## Files
 
 ```text
