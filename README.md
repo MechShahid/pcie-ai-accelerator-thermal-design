@@ -4,7 +4,7 @@
 
 This project develops a simplified mechanical and thermal design workflow for a high-power PCIe-style AI accelerator card. The goal is to demonstrate practical board-level electronics cooling judgement for accelerator-card applications.
 
-The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, airflow-bypass diagnosis, concept-level mechanical support screening, and a liquid/immersion cooling screening extension.
+The project includes first-order thermal resistance sizing, PCIe-style mechanical layout, heatsink and airflow planning, CFD boundary-condition definition, TIM and airflow sensitivity studies, first-pass conjugate heat-transfer CFD, airflow-bypass diagnosis, mesh-sensitivity checking, turbulence-model sensitivity checking, concept-level mechanical support screening, and a liquid/immersion cooling screening extension.
 
 This is an original engineering demonstrator. It is not a reverse-engineered commercial accelerator card and does not claim production qualification.
 
@@ -19,6 +19,8 @@ Modern AI accelerator cards can dissipate high chip-level power and require care
 - Can the chip temperature target be met with forced-air cooling?
 - How sensitive is the design to TIM thickness, TIM conductivity, and airflow rate?
 - How does airflow bypass affect a lower-height heatsink?
+- Is the final CFD result stable under mesh refinement?
+- How sensitive is the result to laminar versus k-omega SST viscous modelling?
 - Does the final heatsink concept create mechanical support risk?
 - How much lower is the required volumetric flow for liquid coolants compared with air?
 - Why does coolant heat-carrying capacity alone not guarantee low chip temperature?
@@ -139,13 +141,13 @@ This CFD result is a stable first coarse CFD result, not a final mesh-independen
 Current limitations include:
 
 - coarse first-pass mesh
-- no mesh-independence study yet
+- no mesh-independence study yet for CFD-0
 - laminar first-pass flow assumption
 - mild reversed flow at the pressure outlet, affecting approximately 5% of the outlet area
 - simplified material properties
 - simplified air-domain and boundary-condition representation
 
-Recommended next refinements include extending the outlet region, refining the mesh in the fin channels and solid-fluid interfaces, checking turbulence-model sensitivity, and performing mesh-independence checks.
+Recommended next refinements include extending the outlet region, refining the mesh in the fin channels and solid-fluid interfaces, checking turbulence-model sensitivity, and performing further mesh-independence checks.
 
 ## CFD Design Iteration
 
@@ -158,21 +160,29 @@ A sequence of first-pass CFD simulations was used to evaluate and improve the re
 | CFD-1 | 80 × 100 × 35 mm | Open/bypass | 91.47 °C | 12.7 Pa | Fail |
 | CFD-2 | 80 × 100 × 35 mm | Ducted | 87.78 °C | 44.54 Pa | Slight fail |
 | CFD-3 | 80 × 120 × 35 mm | Ducted | 83.52 °C | 49.02 Pa | Pass |
+| CFD-4A | 80 × 120 × 35 mm | Ducted, refined mesh | 78.11 °C | 56.36 Pa | Pass, mesh-sensitivity check |
+| CFD-4B | 80 × 120 × 35 mm | Ducted, refined mesh, k-omega SST | 68.50 °C | 83.84 Pa | Pass, turbulence-model sensitivity check |
 
 The CFD sequence showed that the reduced-height 35 mm heatsink failed in an open/bypass domain because a significant portion of the airflow bypassed the fin region. Adding a ducted airflow path reduced bypass and improved cooling, but the 100 mm long heatsink remained slightly above the 85 °C chip-temperature target.
 
 Extending the ducted heatsink length from 100 mm to 120 mm recovered the remaining thermal margin. The final CFD-3 case reached a maximum chip temperature of 83.52 °C with a pressure drop of approximately 49.02 Pa and a heat-balance error of approximately 0.36%.
 
+A refined-mesh repeat of the final CFD-3 case was then added as CFD-4A. The refined mesh used approximately 511k elements compared with approximately 188k elements in CFD-3. CFD-4A predicted a maximum chip temperature of 78.11 °C and a pressure drop of 56.36 Pa. The result supports the thermal feasibility of the final ducted heatsink design, but the approximately 5.4 °C change in maximum chip temperature means it should be treated as a mesh-sensitivity check rather than mesh-independent CFD validation.
+
+A turbulence-model sensitivity case was then added as CFD-4B using the same refined mesh as CFD-4A, but with the k-omega SST model instead of laminar flow. CFD-4B predicted a maximum chip temperature of 68.50 °C and a pressure drop of 83.84 Pa. The design remained below the 85 °C target, but the difference from the refined laminar case shows that the prediction is sensitive to viscous-model choice. Therefore, CFD-4B is treated as a turbulence-model sensitivity check, not as validated product performance.
+
 Detailed CFD design-iteration documentation:
 
 - [CFD-2 results](docs/cfd_2_results.md)
 - [CFD-3 results](docs/cfd_3_results.md)
+- [CFD-4A mesh sensitivity results](docs/cfd_4a_mesh_sensitivity_results.md)
+- [CFD-4B turbulence-model sensitivity results](docs/cfd_4b_turbulence_model_sensitivity.md)
 - [CFD design iteration summary](docs/cfd_design_iteration_summary.md)
 - [Final project summary](docs/final_project_summary.md)
 
 ## CFD Design Iteration Interpretation
 
-The CFD design iteration produced three important engineering lessons.
+The CFD design iteration produced five important engineering lessons.
 
 First, the open-domain reduced-height heatsink did not fail only because of heatsink size. It also failed because the airflow was not well guided through the fin region. CFD-1 had a relatively low pressure drop of approximately 12.7 Pa and a high maximum chip temperature of 91.47 °C, indicating significant bypass.
 
@@ -180,7 +190,11 @@ Second, ducting improved the reduced-height heatsink. CFD-2 increased the pressu
 
 Third, extending the ducted heatsink from 100 mm to 120 mm recovered the remaining thermal margin. CFD-3 reduced the maximum chip temperature to 83.52 °C, which is approximately 1.48 °C below the 85 °C target.
 
-This sequence demonstrates a physics-based design workflow: identify the failure, diagnose the airflow limitation, improve the ducting, and then modify the heatsink geometry to recover thermal margin.
+Fourth, the refined-mesh CFD-4A result still passed the thermal target, but the chip temperature changed by approximately 5.4 °C compared with CFD-3. Therefore, the CFD-4A result supports thermal feasibility but does not prove full mesh independence.
+
+Fifth, the k-omega SST CFD-4B result predicted stronger cooling and higher pressure drop than the refined laminar case. The maximum chip temperature reduced from 78.11 °C to 68.50 °C, while the pressure drop increased from 56.36 Pa to 83.84 Pa. This shows that the design remains thermally feasible under both assumptions, but the detailed prediction is sensitive to viscous-model choice.
+
+This sequence demonstrates a physics-based design workflow: identify the failure, diagnose the airflow limitation, improve the ducting, modify the heatsink geometry to recover thermal margin, check sensitivity to mesh refinement, and check sensitivity to viscous-model choice.
 
 ## Mechanical Support and Structural Feasibility Screening
 
@@ -288,12 +302,16 @@ The mass comparison showed that several thermally attractive heatsink concepts w
 - [CFD-0 results](docs/cfd_0_results.md)
 - [CFD-2 results](docs/cfd_2_results.md)
 - [CFD-3 results](docs/cfd_3_results.md)
+- [CFD-4A mesh sensitivity results](docs/cfd_4a_mesh_sensitivity_results.md)
+- [CFD-4B turbulence-model sensitivity results](docs/cfd_4b_turbulence_model_sensitivity.md)
 - [CFD design iteration summary](docs/cfd_design_iteration_summary.md)
 - [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
 - [Liquid and immersion cooling extension](docs/liquid_cooling_extension.md)
 - [Final project summary](docs/final_project_summary.md)
 
 ## Project Structure
+
+Note: Large Fluent `.cas.h5` and `.dat.h5` files for CFD-4A and CFD-4B were generated and retained locally, but they are not included in the GitHub repository because they exceed the normal GitHub web-upload file-size limit. The numerical results, screenshots, and documentation are included.
 
 ```text
 pcie-ai-accelerator-thermal-design/
@@ -314,6 +332,8 @@ pcie-ai-accelerator-thermal-design/
 │   ├── cfd_0_results.md
 │   ├── cfd_2_results.md
 │   ├── cfd_3_results.md
+│   ├── cfd_4a_mesh_sensitivity_results.md
+│   ├── cfd_4b_turbulence_model_sensitivity.md
 │   ├── cfd_design_iteration_summary.md
 │   └── final_project_summary.md
 ├── python/
@@ -374,12 +394,29 @@ pcie-ai-accelerator-thermal-design/
     │       ├── cfd_2_static_pressure_center_x_plane.png
     │       └── cfd_2_z_velocity_fin_entrance_plane.png
     │
-    └── cfd_3_80x120x35_ducted_domain/
+    ├── cfd_3_80x120x35_ducted_domain/
+    │   ├── README.md
+    │   └── screenshots/
+    │       ├── cfd_3_temperature_center_x_plane.png
+    │       ├── cfd_3_static_pressure_center_x_plane.png
+    │       └── cfd_3_z_velocity_fin_entrance_plane.png
+    │
+    ├── cfd_4a_80x120x35_ducted_mesh_sensitivity/
+    │   ├── README.md
+    │   ├── results/
+    │   │   └── README.md
+    │   └── screenshots/
+    │       ├── cfd_4a_temperature_solid_surfaces.png
+    │       ├── cfd_4a_temperature_isometric_solid_surfaces.png
+    │       └── cfd_4a_static_pressure_center_x_plane.png
+    │
+    └── cfd_4b_80x120x35_ducted_sst_sensitivity/
         ├── README.md
+        ├── results/
+        │   └── README.md
         └── screenshots/
-            ├── cfd_3_temperature_center_x_plane.png
-            ├── cfd_3_static_pressure_center_x_plane.png
-            └── cfd_3_z_velocity_fin_entrance_plane.png
+            ├── cfd_4b_temperature_solid_surfaces.png
+            └── cfd_4b_static_pressure_center_x_plane.png
 ```
 
 ## Current Engineering Conclusion
@@ -394,15 +431,21 @@ The project demonstrates a complete early-stage mechanical and thermal design wo
 6. build first-pass conjugate heat-transfer CFD models
 7. diagnose airflow bypass in a reduced-height heatsink design
 8. improve cooling through ducting and heatsink length iteration
-9. check chip temperature, pressure drop, mass balance, and energy balance
-10. estimate heatsink mass, weight force, and approximate bending moment
-11. classify mechanical support risk
-12. extend the workflow with liquid and immersion cooling screening
-13. document limitations and next refinement steps
+9. perform a refined-mesh repeat of the final CFD case
+10. check turbulence-model sensitivity using k-omega SST
+11. check chip temperature, pressure drop, mass balance, and energy balance
+12. estimate heatsink mass, weight force, and approximate bending moment
+13. classify mechanical support risk
+14. extend the workflow with liquid and immersion cooling screening
+15. document limitations and next refinement steps
 
 The larger 80 mm × 100 mm × 50 mm forced-air heatsink reference case met the 85 °C chip-temperature target with a maximum chip temperature of approximately 75.97 °C.
 
 A reduced-height 35 mm heatsink concept was then investigated through CFD design iteration. The open/bypass 80 mm × 100 mm × 35 mm case failed because of airflow bypass. A ducted version improved the maximum chip temperature from 91.47 °C to 87.78 °C, but still remained slightly above the target. Extending the ducted heatsink length to 120 mm produced a passing result with a maximum chip temperature of 83.52 °C and a pressure drop of approximately 49.02 Pa.
+
+A refined-mesh repeat of the final ducted case was added as CFD-4A. The refined case used approximately 511k elements and predicted a maximum chip temperature of 78.11 °C with a pressure drop of 56.36 Pa. The refined result supports the thermal feasibility of the final design, but the temperature change relative to CFD-3 indicates that further mesh refinement and local near-wall/interface checks would be required before claiming mesh-independent validation.
+
+A k-omega SST sensitivity case was added as CFD-4B using the same refined mesh. The SST case predicted a lower maximum chip temperature of 68.50 °C but a higher pressure drop of 83.84 Pa. This supports the thermal feasibility conclusion under both laminar and SST assumptions, but also shows that the detailed prediction is sensitive to viscous-model choice.
 
 The final CFD-3 result supports the design direction that a ducted 80 mm × 120 mm × 35 mm aluminium heatsink can meet the simplified 250 W chip cooling target in this first-pass thermal feasibility model.
 
@@ -410,4 +453,4 @@ However, concept-level mechanical screening estimates the final CFD-3 heatsink m
 
 The liquid and immersion cooling extension shows that liquid coolants can carry the same 250 W heat load with far lower volumetric flow than air. However, coolant heat-carrying capacity alone does not predict chip-level temperature. The screening results show that local heat-transfer coefficient, wetted area, heat spreading, and flow architecture are critical. Bare dielectric immersion over only the chip footprint is not sufficient in the simplified model, while an idealized finned immersed heat spreader strongly reduces the estimated surface-to-fluid temperature rise.
 
-This remains a portfolio-level engineering demonstrator and would require mesh sensitivity, turbulence or transition assessment, detailed PCB layout checks, mechanical support design, PCB structural FEA, shock/vibration assessment, liquid-cooling pressure-drop modelling, immersion-system CFD, and experimental correlation before being treated as a validated product design.
+This remains a portfolio-level engineering demonstrator and would require further mesh sensitivity, turbulence or transition assessment, detailed PCB layout checks, mechanical support design, PCB structural FEA, shock/vibration assessment, liquid-cooling pressure-drop modelling, immersion-system CFD, and experimental correlation before being treated as a validated product design.
