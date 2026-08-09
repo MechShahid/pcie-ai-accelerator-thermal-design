@@ -230,6 +230,20 @@ Detailed mechanical support documentation is available here:
 
 - [Mechanical support and structural feasibility](docs/mechanical_support_and_structural_feasibility.md)
 
+### Mechanical Support Study
+
+A simplified ANSYS Mechanical static structural study was added to compare PCB/heatsink support concepts for the final 80 × 120 × 35 mm ducted heatsink design.
+
+The study compares:
+
+- Case A: unsupported PCB + equivalent heatsink mass
+- Case B: PCB + bonded aluminium backplate
+- Case C: PCB + backplate + four standoff supports
+
+The results show that the heatsink concept is mechanically support-sensitive. The unsupported case gives approximately 1.75 mm maximum deformation, while the four-standoff support concept reduces deformation strongly by creating a direct chassis-supported load path.
+
+[View mechanical support study](./mechanical/heatsink_pcb_support_study/README.md)
+
 ## Liquid and Immersion Cooling Extension
 
 A liquid and immersion cooling screening extension was added to compare the same 250 W chip heat load using simple first-principles and empirical-correlation calculations.
